@@ -3,9 +3,6 @@
   "version": "1.0.0",
   "description": "A gridsome plugin to index objects to Algolia",
   "main": "index.js",
-  "scripts": {
-    "test": "npm run test"
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/u12206050/gridsome-plugin-algolia.git"
@@ -13,7 +10,8 @@
   "keywords": [
     "gridsome",
     "plugin",
-    "algolia"
+    "algolia",
+    "gridsome-plugin"
   ],
   "author": "Gerard Lamusse",
   "license": "MIT",
