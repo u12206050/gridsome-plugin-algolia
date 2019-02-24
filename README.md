@@ -39,7 +39,12 @@ const collections = [
     contentTypeName: 'BlogPost',
     indexName: 'posts', // Algolia index name
     itemFormatter: (item) => {
-      return { objectID: item.id, title: item.title, slug: item.slug, modified: item.modified };
+      return {
+        objectID: item.id,
+        title: item.title,
+        slug: item.slug,
+        modified: String(item.modified)
+      }
     }, // optional
     matchFields: ['slug', 'modified'], // Array<String> required with PartialUpdates
   },
@@ -64,3 +69,20 @@ module.exports = {
 ### Partial Updates
 
 By default all items will be reindexed on every build. To enable only indexing new, changed and deleted items, set `enablePartialUpdates` to `true` and make sure `matchFields` is correct for every collection.
+
+
+
+## Known Issues
+
+**Q** Partial updates are updateing all items every time
+**A** Make sure that the fields you use to compare are either `Strings` or `Numbers`. Dates for example are converted to String when pushed to Algolia so they won't match unless you first convert the Date to a string eg.
+```
+    itemFormatter: (item) => {
+      return {
+        objectID: item.id,
+        title: item.title,
+        slug: item.slug,
+        modified: String(item.modified) // Converted to string
+      }
+    }
+```

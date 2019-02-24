@@ -30,7 +30,8 @@ module.exports = function (
   function fetchAlgoliaObjects(index, attributesToRetrieve) {
     return new Promise((resolve, reject) => {
       /* Check if we havn't already fetched this index */
-      if (indexState[index.indexName]) return resolve(indexState[index.indexName].hits)
+      const state = indexState[index.indexName]
+      if (state && state.hits) return resolve(state.hits)
 
       const browser = index.browseAll('', { attributesToRetrieve: ['modified'] });
       const hits = {};
@@ -43,7 +44,7 @@ module.exports = function (
         }
       });
       browser.on('end', () => {
-        indexState[index.indexName].hits = hits
+        state.hits = hits
         resolve(hits)
       });
       browser.on('error', (err) => reject(err) );
@@ -89,7 +90,7 @@ module.exports = function (
 
       const { collection } = store.getContentType(contentTypeName)
 
-      const items = collection.data.map(itemFormatter)
+      const items = collection.data.map(item => itemFormatter({...item, ...item.fields}))
       if (items.length > 0 && !items[0].objectID) {
         throw `Algolia failed collection #${cIndex}. Query results do not have 'objectID' key`;
       }
