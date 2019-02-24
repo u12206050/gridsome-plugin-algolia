@@ -1,4 +1,4 @@
-module.exports = function (api, options) {
+module.exports = function (api, pluginOptions) {
   const algoliasearch = require('algoliasearch');
   const chunk = require('lodash.chunk');
 
@@ -48,13 +48,10 @@ module.exports = function (api, options) {
   }
 
   api.afterBuild(async ({ store, config }) => {
-    if (!config.siteUrl) {
-      throw new Error(`Sitemap plugin is missing a required siteUrl config.`)
-    }
 
     const started = Date.now()
 
-    const { appId, apiKey, collections, chunkSize = 1000, enablePartialUpdates = false } = options
+    const { appId, apiKey, collections, chunkSize = 1000, enablePartialUpdates = false } = pluginOptions
 
     const jobs = collections.map(async (
       { indexName, itemFormatter = defaultTransformer, contentTypeName, matchFields = ['modified'] },
