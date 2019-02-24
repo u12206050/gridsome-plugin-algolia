@@ -1,4 +1,7 @@
-module.exports = function (api, pluginOptions) {
+module.exports = function (
+  { afterBuild, store },
+  {appId, apiKey, collections, chunkSize = 1000, enablePartialUpdates = false }
+) {
   const algoliasearch = require('algoliasearch');
   const chunk = require('lodash.chunk');
 
@@ -16,7 +19,7 @@ module.exports = function (api, pluginOptions) {
     };
   }
 
-  const indexHits = {}
+  const indexState = {}
 
   /**
    * Fetches all items for the current index from Algolia
@@ -27,7 +30,7 @@ module.exports = function (api, pluginOptions) {
   function fetchAlgoliaObjects(index, attributesToRetrieve) {
     return new Promise((resolve, reject) => {
       /* Check if we havn't already fetched this index */
-      if (indexHits[index.indexName]) return resolve(indexHits[index.indexName])
+      if (indexState[index.indexName]) return resolve(indexState[index.indexName].hits)
 
       const browser = index.browseAll('', { attributesToRetrieve: ['modified'] });
       const hits = {};
@@ -40,18 +43,18 @@ module.exports = function (api, pluginOptions) {
         }
       });
       browser.on('end', () => {
-        indexHits[index.indexName] = hits
+        indexState[index.indexName].hits = hits
         resolve(hits)
       });
       browser.on('error', (err) => reject(err) );
     });
   }
 
-  api.afterBuild(async ({ store, config }) => {
+  afterBuild(async () => {
 
     const started = Date.now()
 
-    const { appId, apiKey, collections, chunkSize = 1000, enablePartialUpdates = false } = pluginOptions
+    const client = algoliasearch(appId, apiKey);
 
     const jobs = collections.map(async (
       { indexName, itemFormatter = defaultTransformer, contentTypeName, matchFields = ['modified'] },
@@ -82,7 +85,7 @@ module.exports = function (api, pluginOptions) {
         return _index
       })(index)
 
-      console.log(`Algolia collection #${i}: getting ${contentTypeName}`);
+      console.log(`Algolia collection #${cIndex}: getting ${contentTypeName}`);
 
       const { collection } = store.getContentType(contentTypeName)
 
@@ -91,16 +94,16 @@ module.exports = function (api, pluginOptions) {
         throw `Algolia failed collection #${cIndex}. Query results do not have 'objectID' key`;
       }
 
-      console.log(`Algolia collection #${i}: items in collection ${Object.keys(items).length}`);
+      console.log(`Algolia collection #${cIndex}: items in collection ${Object.keys(items).length}`);
 
       let hasChanged = items;
       if (enablePartialUpdates) {
-        console.log(`Algolia collection #${i}: starting Partial updates`);
+        console.log(`Algolia collection #${cIndex}: starting Partial updates`);
 
         const algoliaItems = await fetchAlgoliaObjects(indexToUse, matchFields);
 
-        const results = Object.keys(algoliaItems).length
-        console.log(`Algolia collection #${i}: found ${results} existing items`);
+        const results = algoliaItems ? Object.keys(algoliaItems).length : 0
+        console.log(`Algolia collection #${cIndex}: found ${results} existing items`);
 
         if (results) {
           hasChanged = items.filter(curObj => {
@@ -119,12 +122,12 @@ module.exports = function (api, pluginOptions) {
           Object.keys(algoliaItems).forEach(({ objectID }) => currentIndexState.toRemove[objectID] = true)
         }
 
-        console.log(`Algolia collection #${i}: Partial updates – [insert/update: ${hasChanged.length}, total: ${items.length}]`);
+        console.log(`Algolia collection #${cIndex}: Partial updates – [insert/update: ${hasChanged.length}, total: ${items.length}]`);
       }
 
       const chunks = chunk(hasChanged, chunkSize);
 
-      console.log(`Algolia collection #${i}: splitting in ${chunks.length} jobs`);
+      console.log(`Algolia collection #${cIndex}: splitting in ${chunks.length} jobs`);
 
       /* Add changed / new items */
       const chunkJobs = chunks.map(async function(chunked) {
@@ -135,7 +138,7 @@ module.exports = function (api, pluginOptions) {
       await Promise.all(chunkJobs);
 
       if (useTempIndex) {
-        console.log(`Algolia collection #${i}: moving copied index to main index`);
+        console.log(`Algolia collection #${cIndex}: moving copied index to main index`);
         return moveIndex(client, indexToUse, index);
       }
     });
@@ -159,7 +162,7 @@ module.exports = function (api, pluginOptions) {
         await Promise.all(cleanup);
       }
     } catch (err) {
-      throw (`Algolia failed collection #${cIndex}`, err);
+      throw `Algolia failed`, err;
     }
 
     console.log(`Finished indexing to Algolia in ${Date.now() - started}ms`);
