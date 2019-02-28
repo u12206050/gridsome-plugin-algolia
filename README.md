@@ -1,5 +1,5 @@
 
-[![npm version](https://badge.fury.io/js/gridsome-plugin-algolia.svg)](https://badge.fury.io/js/gridsome-plugin-algolia)
+[![npm version](https://badge.fury.io/js/gridsome-plugin-algolia.svg)](https://www.npmjs.com/package/gridsome-plugin-algolia)
 
 # Gridsome plugin Algolia
 
