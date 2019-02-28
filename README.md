@@ -1,4 +1,8 @@
+
+[![npm version](https://badge.fury.io/js/gridsome-plugin-algolia.svg)](https://badge.fury.io/js/gridsome-plugin-algolia)
+
 # Gridsome plugin Algolia
+
 A gridsome plugin to index objects to Algolia
 
 > Ported from [gatsby-plugin-algolia](https://github.com/algolia/gatsby-plugin-algolia)
@@ -74,15 +78,19 @@ By default all items will be reindexed on every build. To enable only indexing n
 
 ## Known Issues
 
-**Q** Partial updates are updateing all items every time
-**A** Make sure that the fields you use to compare are either `Strings` or `Numbers`. Dates for example are converted to String when pushed to Algolia so they won't match unless you first convert the Date to a string eg.
+**Q** Partial updates not working? All items being reindexed everytime.
+
+**A**
+* Make sure that the fields you use to compare are either `Strings` or `Numbers`. *Dates* for example are converted to String when pushed to Algolia so they won't match unless you first convert the Date to a string eg.
+* Make sure each object has a unique `id` that you map to `objectID`
+
 ```
     itemFormatter: (item) => {
       return {
-        objectID: item.id,
+        objectID: item.id, // Unique id
         title: item.title,
         slug: item.slug,
-        modified: String(item.modified) // Converted to string
+        modified: String(item.modified) // Date converted to string
       }
     }
 ```
