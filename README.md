@@ -76,7 +76,7 @@ By default all items will be reindexed on every build. To enable only indexing n
 
 
 
-## Known Issues
+## QnA
 
 **Q** Partial updates not working? All items being reindexed everytime.
 
