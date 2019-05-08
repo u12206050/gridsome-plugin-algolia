@@ -22,7 +22,9 @@ Here we have an example with some data that might not be very relevant, but will
 First add credentials to a .env file, which you won't commit. If you track this in your file, and especially if the site is open source, you will leak your admin API key. This would mean anyone is able to change anything on your Algolia index.
 
 ```env
-// .env.production
+// DEVELOPING: .env.development
+// BUILDING: .env.production
+
 ALGOLIA_APP_ID=XXX
 ALGOLIA_APP_KEY=XXX
 ALGOLIA_INDEX_NAME=XXX
@@ -31,11 +33,6 @@ ALGOLIA_INDEX_NAME=XXX
 ## Usage
 
 ```javascript:title=gridsome-config.js
-
-require('dotenv').config({
-  path: `.env.${process.env.NODE_ENV}`,
-})
-
 // gridsome-config.js
 
 const collections = [
