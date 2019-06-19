@@ -12,6 +12,8 @@ You can specify a list of collections to run and how to transform them into an a
 Here we have an example with some data that might not be very relevant, but will work with the default configuration of `gridsome new`
 
 
+**BREAKING CHANGES FROM VERSION 1.x: Read Below**
+
 ## Install
 * `yarn add gridsome-plugin-algolia`
 * `npm install gridsome-plugin-algolia -S`
@@ -26,7 +28,7 @@ First add credentials to a .env file, which you won't commit. If you track this 
 // BUILDING: .env.production
 
 ALGOLIA_APP_ID=XXX
-ALGOLIA_APP_KEY=XXX
+ALGOLIA_ADMIN_KEY=XXX
 ALGOLIA_INDEX_NAME=XXX
 ```
 
@@ -37,7 +39,19 @@ ALGOLIA_INDEX_NAME=XXX
 
 const collections = [
   {
-    contentTypeName: 'BlogPost',
+    query: `{
+      allBlogPost {
+        edges {
+          node {
+            id
+            title
+            slug
+            modified
+          }
+        }
+      }
+    }`,
+    transformer: ({ data }) => data.allBlogPost.edges.map(({ node }) => node)
     indexName: 'posts', // Algolia index name
     itemFormatter: (item) => {
       return {
@@ -57,7 +71,7 @@ module.exports = {
       use: `gridsome-plugin-algolia`,
       options: {
         appId: process.env.ALGOLIA_APP_ID,
-        apiKey: process.env.ALGOLIA_API_KEY,
+        apiKey: process.env.ALGOLIA_ADMIN_KEY,
         collections,
         chunkSize: 10000, // default: 1000
         enablePartialUpdates: true, // default: false
@@ -71,7 +85,15 @@ module.exports = {
 
 By default all items will be reindexed on every build. To enable only indexing new, changed and deleted items, set `enablePartialUpdates` to `true` and make sure `matchFields` is correct for every collection.
 
+## Migrating from Version 1 to Version 2
 
+The `contentTypeName` field in `collections` has been replaced in favor of `query` and `transformer`. This is to allow greater control over what data you want to fetch from GraphQL before indexing to Algolia.
+
+To migrate the least you should do is the following:
+
+  1. Remove the `contentTypeName` property
+  2. Add the `query` property containing a plain graphql query to fetch the data you need
+  3. Add the `transformer` property with a function as value to map the result to a set of items. (**Note**: The `itemFormatter` function will still be called)
 
 ## QnA
 

@@ -1,5 +1,5 @@
 module.exports = function (
-  { afterBuild, store },
+  { afterBuild, store, _app: { graphql } },
   {appId, apiKey, collections, chunkSize = 1000, enablePartialUpdates = false }
 ) {
   const algoliasearch = require('algoliasearch');
@@ -58,12 +58,13 @@ module.exports = function (
     const client = algoliasearch(appId, apiKey);
 
     const jobs = collections.map(async (
-      { indexName, itemFormatter = defaultTransformer, contentTypeName, matchFields = ['modified'] },
+      { indexName, itemFormatter = defaultTransformer, contentTypeName, query, transformer, matchFields = ['modified'] },
       cIndex
     ) => {
-      if (!contentTypeName) throw `Algolia failed collection #${cIndex}: contentTypeName required`;
+      if (contentTypeName) throw new Error(`"contentTypeName" is no longer supported (Since version 2.x). Please update your code and remove "contentTypeName"`);
+      if (!query || !transformer) throw new Error(`Algolia failed collection #${cIndex}: "query" and "transformer" required`);
 
-      if (!Array.isArray(matchFields) || !matchFields.length) throw `Algolia failed ${cIndex}: matchFields required array of strings`;
+      if (!Array.isArray(matchFields) || !matchFields.length) throw new Error(`Algolia failed ${cIndex}: matchFields required array of strings`);
 
       /* Use to keep track of what to remove afterwards */
       if (!indexState[indexName]) indexState[indexName] = {
@@ -86,13 +87,17 @@ module.exports = function (
         return _index
       })(index)
 
-      console.log(`Algolia collection #${cIndex}: getting ${contentTypeName}`);
+      console.log(`Algolia collection #${cIndex}: Executing query`);
 
-      const { collection } = store.getContentType(contentTypeName)
+      const result = await graphql(query);
+      if (result.errors) {
+        report.panic(`failed to index to Algolia`, result.errors);
+      }
+      let items = transformer(result)
 
-      const items = collection.data.map(item => itemFormatter({...item, ...item.fields}))
+      items = items.map(item => itemFormatter({...item, ...item.fields}))
       if (items.length > 0 && !items[0].objectID) {
-        throw `Algolia failed collection #${cIndex}. Query results do not have 'objectID' key`;
+        throw new Error(`Algolia failed collection #${cIndex}. Query results do not have 'objectID' key`);
       }
 
       console.log(`Algolia collection #${cIndex}: items in collection ${Object.keys(items).length}`);
@@ -120,7 +125,7 @@ module.exports = function (
             return !!matchFields.find(field => extObj[field] !== curObj[field]);
           });
 
-          Object.keys(algoliaItems).forEach(({ objectID }) => currentIndexState.toRemove[objectID] = true)
+          Object.keys(algoliaItems).forEach((objectID) => currentIndexState.toRemove[objectID] = true)
         }
 
         console.log(`Algolia collection #${cIndex}: Partial updates – [insert/update: ${hasChanged.length}, total: ${items.length}]`);
@@ -163,7 +168,7 @@ module.exports = function (
         await Promise.all(cleanup);
       }
     } catch (err) {
-      throw `Algolia failed`, err;
+      throw new Error(`Algolia failed: ${err.message}`);
     }
 
     console.log(`Finished indexing to Algolia in ${Date.now() - started}ms`);
