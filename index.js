@@ -93,9 +93,12 @@ module.exports = function (
       if (result.errors) {
         report.panic(`failed to index to Algolia`, result.errors);
       }
-      let items = transformer(result)
 
-      items = items.map(item => itemFormatter({...item, ...item.fields}))
+      const items = transformer(result).map(itemFormatter || ((item) => {
+        item.objectID = item.objectID || item.id
+        return item
+      }))
+
       if (items.length > 0 && !items[0].objectID) {
         throw new Error(`Algolia failed collection #${cIndex}. Query results do not have 'objectID' key`);
       }
