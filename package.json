@@ -1,6 +1,6 @@
 {
   "name": "gridsome-plugin-algolia",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "A gridsome plugin to index objects to Algolia",
   "main": "index.js",
   "repository": {

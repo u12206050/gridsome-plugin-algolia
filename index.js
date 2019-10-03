@@ -51,6 +51,17 @@ module.exports = function (
     });
   }
 
+  async function getAlgoliaObjects(state, indexToUse, matchFields) {
+    if (state.algoliaItems) return state.algoliaItems
+    if (state._fetchingAlgoliaObjects) return state._fetchingAlgoliaObjects
+    else {
+      state._fetchingAlgoliaObjects = fetchAlgoliaObjects(indexToUse, matchFields)
+      state.algoliaItems = await state._fetchingAlgoliaObjects
+      delete(state._fetchingAlgoliaObjects)
+      return state.algoliaItems
+    }
+  }
+
   afterBuild(async () => {
 
     const started = Date.now()
@@ -69,7 +80,7 @@ module.exports = function (
       /* Use to keep track of what to remove afterwards */
       if (!indexState[indexName]) indexState[indexName] = {
         index: client.initIndex(indexName),
-        toRemove: {}
+        checked: {}
       }
       const currentIndexState = indexState[indexName];
 
@@ -109,7 +120,7 @@ module.exports = function (
       if (enablePartialUpdates) {
         console.log(`Algolia collection #${cIndex}: starting Partial updates`);
 
-        const algoliaItems = await fetchAlgoliaObjects(indexToUse, matchFields);
+        const algoliaItems = await getAlgoliaObjects(currentIndexState, indexToUse, matchFields);
 
         const results = algoliaItems ? Object.keys(algoliaItems).length : 0
         console.log(`Algolia collection #${cIndex}: found ${results} existing items`);
@@ -117,18 +128,15 @@ module.exports = function (
         if (results) {
           hasChanged = items.filter(curObj => {
             const {objectID} = curObj
-            let extObj = algoliaItems[objectID]
+            let extObj = currentIndexState.checked[ID] = currentIndexState.checked[ID] || algoliaItems[objectID]
 
             /* The object exists so we don't need to remove it from Algolia */
             delete(algoliaItems[objectID]);
-            delete(currentIndexState.toRemove[objectID])
 
             if (!extObj) return true;
 
             return !!matchFields.find(field => extObj[field] !== curObj[field]);
           });
-
-          Object.keys(algoliaItems).forEach((objectID) => currentIndexState.toRemove[objectID] = true)
         }
 
         console.log(`Algolia collection #${cIndex}: Partial updates – [insert/update: ${hasChanged.length}, total: ${items.length}]`);
@@ -154,17 +162,19 @@ module.exports = function (
 
     try {
       await Promise.all(jobs)
+
       if (enablePartialUpdates) {
         /* Execute once per index */
         /* This allows multiple queries to overlap */
         const cleanup = Object.keys(indexState).map(async function(indexName) {
-          const state = indexState[indexName];
-          const isRemoved = Object.keys(state.toRemove);
+          const { index, algoliaObjects } = indexState[indexName];
+          if (!algoliaItems) return
+          const isRemoved = Object.keys(algoliaItems);
 
           if (isRemoved.length) {
             console.log(`Algolia: deleting ${isRemoved.length} items from ${indexName} index`);
-            const { taskID } = await state.index.deleteObjects(isRemoved);
-            return state.index.waitTask(taskID);
+            const { taskID } = await index.deleteObjects(isRemoved);
+            return index.waitTask(taskID);
           }
         })
 
