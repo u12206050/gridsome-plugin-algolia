@@ -167,7 +167,7 @@ module.exports = function (
         /* Execute once per index */
         /* This allows multiple queries to overlap */
         const cleanup = Object.keys(indexState).map(async function(indexName) {
-          const { index, algoliaObjects } = indexState[indexName];
+          const { index, algoliaItems } = indexState[indexName];
           if (!algoliaItems) return
           const isRemoved = Object.keys(algoliaItems);
 
