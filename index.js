@@ -128,7 +128,7 @@ module.exports = function (
         if (results) {
           hasChanged = items.filter(curObj => {
             const {objectID} = curObj
-            let extObj = currentIndexState.checked[ID] = currentIndexState.checked[ID] || algoliaItems[objectID]
+            let extObj = currentIndexState.checked[objectID] = currentIndexState.checked[objectID] || algoliaItems[objectID]
 
             /* The object exists so we don't need to remove it from Algolia */
             delete(algoliaItems[objectID]);
