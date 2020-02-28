@@ -52,7 +52,7 @@ const collections = [
       }
     }`,
     transformer: ({ data }) => data.allBlogPost.edges.map(({ node }) => node)
-    indexName: 'posts', // Algolia index name
+    indexName: process.env.ALGOLIA_INDEX_NAME || 'posts', // Algolia index name
     itemFormatter: (item) => {
       return {
         objectID: item.id,
