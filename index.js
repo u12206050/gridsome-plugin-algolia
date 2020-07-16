@@ -1,5 +1,5 @@
 module.exports = function (
-  { afterBuild, store, _app: { graphql } },
+  { afterBuild, _app: { graphql } },
   {appId, apiKey, collections, chunkSize = 1000, enablePartialUpdates = false }
 ) {
   const algoliasearch = require('algoliasearch');
