@@ -3,7 +3,7 @@
 
 # Gridsome plugin Algolia
 
-A gridsome plugin to index objects to Algolia
+A gridsome search plugin to index objects to Algolia
 
 > Ported from [gatsby-plugin-algolia](https://github.com/algolia/gatsby-plugin-algolia)
 
