@@ -102,7 +102,7 @@ module.exports = function (
 
       const result = await graphql(query);
       if (result.errors) {
-        report.panic(`failed to index to Algolia`, result.errors);
+        throw new Error(`failed to index to Algolia: ${result.errors}`);
       }
 
       const items = transformer(result).map(itemFormatter || ((item) => {
