@@ -114,7 +114,7 @@ module.exports = function (
         throw new Error(`Algolia failed collection #${cIndex}. Query results do not have 'objectID' key`);
       }
 
-      console.log(`Algolia collection #${cIndex}: items in collection ${Object.keys(items).length}`);
+      console.log(`Algolia collection #${cIndex}: items in collection ${items.length}`);
 
       let hasChanged = items;
       if (enablePartialUpdates) {
